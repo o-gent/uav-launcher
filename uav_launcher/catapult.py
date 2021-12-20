@@ -26,7 +26,7 @@ class Catapult:
 
 
     def set_speed(self, speed, ramp):
-        self.motor.controller.config.vel_limit = 100
+        self.motor.controller.config.vel_limit = 150
         self.motor.controller.config.vel_ramp_rate = ramp
         self.motor.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
         self.motor.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL
@@ -57,7 +57,7 @@ class Catapult:
 
     def launch(self, speed):
         location = 0
-        self.set_speed(speed, 50)
+        self.set_speed(speed, 300)
         while self.motor.encoder.pos_estimate < self.catapult_length/self.circumference:
             time.sleep(0.01)
         self.set_speed(0, 2)
