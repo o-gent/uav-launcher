@@ -1,8 +1,19 @@
+import logging
+import math
+import time
+
 import odrive
 from odrive.enums import *
-import time
-import math
+from odrive.utils import start_liveplotter, dump_errors
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s, [%(levelname)s], %(module)-5s, %(message)s",
+    handlers=[
+        logging.FileHandler(f"logs/log_{time.strftime('%Y%m%d-%H%M%S')}.log"),
+        logging.StreamHandler()
+    ]
+)
 
 class Catapult:
     """ abstract odrive functionality for launching things """
@@ -15,50 +26,61 @@ class Catapult:
         
         print("finding an odrive...")
         self.drive = odrive.find_any()
-        self.motor = self.drive.axis1
+
+        self.axis = self.drive.axis1
+        self.axis.motor.config.current_lim = 80
         print(self.drive)
 
         print(f"Bus voltage is {self.drive.vbus_voltage} V")
         print(f"{self.drive.vbus_voltage/self.cell_no}V per cell")
+
+        self.logger = logging.getLogger("main")
         
-        if not self.motor.motor.is_calibrated:
+        if not self.axis.motor.is_calibrated:
             self.calibrate()
 
 
     def set_speed(self, speed, ramp):
-        self.motor.controller.config.vel_limit = 150
-        self.motor.controller.config.vel_ramp_rate = ramp
-        self.motor.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
-        self.motor.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL
-        self.motor.controller.config.input_mode = INPUT_MODE_VEL_RAMP
-        self.motor.controller.input_vel = speed/self.circumference
+        self.axis.controller.config.vel_limit = 1000
+        self.axis.controller.config.vel_ramp_rate = ramp
+        self.axis.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
+        self.axis.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL
+        self.axis.controller.config.input_mode = INPUT_MODE_VEL_RAMP
+        self.axis.controller.input_vel = speed/self.circumference
 
 
     def set_location(self, distance):
         """ move the tab to a location relative to the origin """
         # set to a low speed for the reset
-        self.motor.controller.config.input_mode = INPUT_MODE_POS_FILTER
-        self.motor.controller.config.vel_limit = 5
-        self.motor.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
-        self.motor.controller.config.control_mode = CONTROL_MODE_POSITION_CONTROL
-        self.motor.controller.input_pos = distance/self.circumference
+        self.axis.controller.config.input_mode = INPUT_MODE_POS_FILTER
+        self.axis.controller.config.vel_limit = 5
+        self.axis.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
+        self.axis.controller.config.control_mode = CONTROL_MODE_POSITION_CONTROL
+        self.axis.controller.input_pos = distance/self.circumference
 
 
     def idle(self):
-        self.motor.requested_state = AXIS_STATE_IDLE
+        self.axis.requested_state = AXIS_STATE_IDLE
 
 
     def calibrate(self):
         print("starting calibration...")
-        self.motor.requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE
-        while self.motor.current_state != AXIS_STATE_IDLE:
+        self.axis.requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE
+        while self.axis.current_state != AXIS_STATE_IDLE:
             time.sleep(0.1)
 
 
     def launch(self, speed):
         location = 0
-        self.set_speed(speed, 300)
-        while self.motor.encoder.pos_estimate < self.catapult_length/self.circumference:
-            time.sleep(0.01)
-        self.set_speed(0, 2)
+        self.set_speed(speed, 3000)
+        while self.axis.encoder.pos_estimate < self.catapult_length/self.circumference:
+            position = format(self.axis.encoder.pos_estimate*self.circumference, '.3f').zfill(5)
+            velocity = format(self.axis.encoder.vel_estimate*self.circumference, '.3f').zfill(6)
+            current = format(self.axis.motor.current_control.Iq_measured, '.3f').zfill(7)
+            mechpower = format(self.axis.controller.mechanical_power, '.3f').zfill(8)
+            power = format(self.axis.controller.electrical_power, '.3f').zfill(8)
+            rpm = format(self.axis.encoder.vel_estimate*60, '.3f').zfill(8)
+            self.logger.info(f"""position:{position}, velocity: {velocity}, current: {current}, mechpower:{mechpower}, power:{power}, rpm:{rpm}""")
+        dump_errors(self.drive)
+        self.set_speed(0, 5)
         time.sleep(2)
