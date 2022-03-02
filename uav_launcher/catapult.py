@@ -10,7 +10,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s, [%(levelname)s], %(module)-5s, %(message)s",
     handlers=[
-        logging.FileHandler(f"logs/log_{time.strftime('%Y%m%d-%H%M%S')}.log"),
+        logging.FileHandler(f"logs/log_launcher_{time.strftime('%Y%m%d-%H%M%S')}.log"),
         logging.StreamHandler()
     ]
 )
@@ -18,24 +18,38 @@ logging.basicConfig(
 class Catapult:
     """ abstract odrive functionality for launching things """
     
-    def __init__(self):
+    def __init__(self, instance=None):
         self.catapult_length = 1.87 # m
         self.radius = 0.0287 # m
         self.cell_no = 5
         self.circumference = 2*math.pi*self.radius
         
         print("finding an odrive...")
-        self.drive = odrive.find_any()
+        if instance:
+            self.drive = instance
+        else:
+            self.drive = odrive.find_any()
 
         self.axis = self.drive.axis1
+
         self.axis.motor.config.current_lim = 80
+        self.axis.motor.config.pole_pairs = 7
+        self.axis.motor.config.torque_constant = 8.27/150
+        self.axis.encoder.config.cpr = 8192
+        self.drive.config.enable_brake_resistor = True
+        self.axis.motor.config.motor_type = MOTOR_TYPE_HIGH_CURRENT
+        self.axis.motor.config.calibration_current = 5
+        self.drive.config.dc_max_positive_current = 100
+        self.drive.config.dc_max_negative_current = -20
+
+
         print(self.drive)
 
         print(f"Bus voltage is {self.drive.vbus_voltage} V")
         print(f"{self.drive.vbus_voltage/self.cell_no}V per cell")
 
         self.logger = logging.getLogger("main")
-        
+
         if not self.axis.motor.is_calibrated:
             self.calibrate()
 
@@ -70,9 +84,9 @@ class Catapult:
             time.sleep(0.1)
 
 
-    def launch(self, speed):
+    def launch(self, speed, ramp):
         location = 0
-        self.set_speed(speed, 3000)
+        self.set_speed(speed, ramp)
         while self.axis.encoder.pos_estimate < self.catapult_length/self.circumference:
             position = format(self.axis.encoder.pos_estimate*self.circumference, '.3f').zfill(5)
             velocity = format(self.axis.encoder.vel_estimate*self.circumference, '.3f').zfill(6)
