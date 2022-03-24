@@ -21,7 +21,7 @@ class Catapult:
     def __init__(self, instance=None):
         self.catapult_length = 1.87 # m
         self.radius = 0.0287 # m
-        self.cell_no = 5
+        self.cell_no = 10
         self.circumference = 2*math.pi*self.radius
         
         print("finding an odrive...")
@@ -32,17 +32,6 @@ class Catapult:
 
         self.axis = self.drive.axis1
 
-        self.axis.motor.config.current_lim = 80
-        self.axis.motor.config.pole_pairs = 7
-        self.axis.motor.config.torque_constant = 8.27/150
-        self.axis.encoder.config.cpr = 8192
-        self.drive.config.enable_brake_resistor = True
-        self.axis.motor.config.motor_type = MOTOR_TYPE_HIGH_CURRENT
-        self.axis.motor.config.calibration_current = 5
-        self.drive.config.dc_max_positive_current = 100
-        self.drive.config.dc_max_negative_current = -20
-
-
         print(self.drive)
 
         print(f"Bus voltage is {self.drive.vbus_voltage} V")
@@ -52,6 +41,18 @@ class Catapult:
 
         if not self.axis.motor.is_calibrated:
             self.calibrate()
+
+
+    def first_time_setup(self):
+        self.axis.motor.config.current_lim = 80
+        self.axis.motor.config.pole_pairs = 7
+        self.axis.motor.config.torque_constant = 8.27/150
+        self.axis.encoder.config.cpr = 8192
+        self.drive.config.enable_brake_resistor = True
+        self.axis.motor.config.motor_type = MOTOR_TYPE_HIGH_CURRENT
+        self.axis.motor.config.calibration_current = 5
+        self.drive.config.dc_max_positive_current = 100
+        self.drive.config.dc_max_negative_current = -20
 
 
     def set_speed(self, speed, ramp):
