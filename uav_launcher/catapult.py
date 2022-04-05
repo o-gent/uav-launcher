@@ -30,6 +30,8 @@ class Catapult:
                 if not self.axis.motor.is_calibrated:
                     self.calibrate()
                     cal = True
+                else:
+                    cal = True
             except KeyboardInterrupt:
                 raise Exception()
             except:
