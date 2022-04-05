@@ -33,6 +33,7 @@ class Catapult:
             except KeyboardInterrupt:
                 raise Exception()
             except:
+                print("odrive connection failed")
                 print("finding an odrive...")
                 if instance:
                     self.drive = instance
