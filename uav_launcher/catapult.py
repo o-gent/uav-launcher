@@ -24,7 +24,8 @@ class Catapult:
         self.cell_no = 10
         self.circumference = 2*math.pi*self.radius
 
-        while cal := False:
+        cal = False
+        while cal == False:
             try:
                 if not self.axis.motor.is_calibrated:
                     self.calibrate()
