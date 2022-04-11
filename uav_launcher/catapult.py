@@ -24,36 +24,28 @@ class Catapult:
         self.cell_no = 10
         self.circumference = 2*math.pi*self.radius
 
-        cal = False
-        while cal == False:
-            try:
-                if not self.axis.motor.is_calibrated:
-                    self.calibrate()
-                    cal = True
-                else:
-                    cal = True
-            except KeyboardInterrupt:
-                raise Exception()
-            except:
-                print("odrive connection failed")
-                print("finding an odrive...")
-                if instance:
-                    self.drive = instance
-                else:
-                    self.drive = odrive.find_any()
+        print("finding an odrive...")
+        if instance:
+            self.drive = instance
+        else:
+            self.drive = odrive.find_any()
 
-                self.axis = self.drive.axis1
+        self.axis = self.drive.axis1
 
-                print(self.drive)
+        print(self.drive)
 
-                print(f"Bus voltage is {self.drive.vbus_voltage} V")
-                print(f"{self.drive.vbus_voltage/self.cell_no}V per cell")
+        print(f"Bus voltage is {self.drive.vbus_voltage} V")
+        print(f"{self.drive.vbus_voltage/self.cell_no}V per cell")
+        
+        self.axis.motor.config.current_lim = 80
 
-                self.logger = logging.getLogger("main")
+        if not self.axis.motor.is_calibrated:
+            self.calibrate()
+
+        self.logger = logging.getLogger("main")
 
 
     def first_time_setup(self):
-        self.axis.motor.config.current_lim = 80
         self.axis.motor.config.pole_pairs = 7
         self.axis.motor.config.torque_constant = 8.27/150
         self.axis.encoder.config.cpr = 8192

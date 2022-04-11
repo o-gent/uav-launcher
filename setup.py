@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
     name='uav_launcher',
-    version='0.0.1',
+    version='1.0.0',
     packages=['uav_launcher'],
     install_requires=[
         'odrive',
