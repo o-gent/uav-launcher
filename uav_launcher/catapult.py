@@ -97,6 +97,6 @@ class Catapult:
             power = format(self.axis.controller.electrical_power, '.3f').zfill(8)
             rpm = format(self.axis.encoder.vel_estimate*60, '.3f').zfill(8)
             self.logger.info(f"""position:{position}, velocity: {velocity}, current: {current}, mechpower:{mechpower}, power:{power}, rpm:{rpm}""")
-        dump_errors(self.drive)
         self.set_speed(0, 5)
+        dump_errors(self.drive)
         time.sleep(2)
