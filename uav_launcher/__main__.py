@@ -17,8 +17,9 @@ if args.path:
     import os
     import pandas as pd
     for file in os.listdir(args.path):
-        p = process_catapult_file(file)
-        p.to_csv(file+".csv")
+        p = process_catapult_file(args.path + "/" + file)
+        p.to_csv(args.path + "/" + file + ".csv")
+        sys.exit()
 
 from uav_launcher.catapult import Catapult
 
